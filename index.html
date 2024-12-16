@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Form</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Order Form</h1>
+            <p class="text-gray-600">Select items from our inventory</p>
+        </div>
+
+        <!-- Configuration Section -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold mb-4">Configuration</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 mb-2">Inventory Sheet CSV URL</label>
+                    <input type="text" id="csvUrl" class="w-full p-2 border rounded" 
+                           placeholder="Enter CSV URL or ?sheetId=YOUR_SHEET_ID">
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-2">Order Form URL</label>
+                    <input type="text" id="orderFormUrl" class="w-full p-2 border rounded" 
+                           placeholder="Enter Order Form URL">
+                </div>
+                <button id="loadInventory" 
+                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Load Inventory
+                </button>
+            </div>
+        </div>
+
+        <!-- Order Form -->
+        <div id="orderForm" class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Order Items</h2>
+            <div id="loading" class="hidden">
+                <div class="flex items-center justify-center p-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <span class="ml-2">Loading inventory...</span>
+                </div>
+            </div>
+            <div id="categories" class="space-y-6"></div>
+            
+            <button id="submitOrder" 
+                    class="mt-6 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Submit Order
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Add these functions at the beginning of your script
+        function getSheetIdFromUrl(url) {
+            // Handle direct sheetId parameter
+            if (url.startsWith('?sheetId=')) {
+                return url.replace('?sheetId=', '');
+            }
+            
+            // Handle full Google Sheets URL
+            const matches = url.match(/spreadsheets\/d\/e\/([-\w]+)/);
+            return matches ? matches[1] : null;
+        }
+
+        function updateUrlWithSheetId(sheetId) {
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('sheetId', sheetId);
+            window.history.pushState({}, '', newUrl);
+        }
+
+        // Modify the document ready function
+        $(document).ready(function() {
+            let inventory = [];
+
+            // Check URL parameters first
+            const urlParams = new URLSearchParams(window.location.search);
+            const sheetId = urlParams.get('sheetId');
+            
+            if (sheetId) {
+                $('#csvUrl').val(`https://docs.google.com/spreadsheets/d/e/${sheetId}/pub?output=csv`);
+                $('#loadInventory').click();
+            } else {
+                // Fall back to localStorage
+                const lastUsedUrl = localStorage.getItem('lastUsedCsvUrl');
+                if (lastUsedUrl) {
+                    $('#csvUrl').val(lastUsedUrl);
+                }
+            }
+
+            // Modify the load inventory click handler
+            $('#loadInventory').click(function() {
+                const csvUrl = $('#csvUrl').val();
+                const sheetId = getSheetIdFromUrl(csvUrl);
+                
+                if (sheetId) {
+                    updateUrlWithSheetId(sheetId);
+                    localStorage.setItem('lastUsedCsvUrl', csvUrl);
+                }
+
+                $('#loading').removeClass('hidden');
+                
+                $.get(csvUrl, function(data) {
+                    try {
+                        inventory = parseCSV(data);
+                        displayInventory(inventory);
+                        $('#loading').addClass('hidden');
+                    } catch (e) {
+                        $('#loading').addClass('hidden');
+                        alert('Error parsing CSV data: ' + e.message);
+                    }
+                }).fail(function(error) {
+                    $('#loading').addClass('hidden');
+                    alert('Error loading inventory: ' + error.statusText);
+                });
+            });
+
+            // Update the parseCSV function to handle comma-separated values
+            function parseCSV(csv) {
+                const lines = csv.split('\n');
+                const result = [];
+                const headers = lines[0].split(',').map(h => h.trim());
+
+                for(let i = 1; i < lines.length; i++) {
+                    if(!lines[i]) continue;
+                    const obj = {};
+                    const currentline = lines[i].split(',');
+
+                    for(let j = 0; j < headers.length; j++) {
+                        obj[headers[j]] = currentline[j] ? currentline[j].trim() : '';
+                    }
+                    result.push(obj);
+                }
+                return result;
+            }
+
+            // Display inventory grouped by category
+            function displayInventory(inventory) {
+                const $categories = $('#categories');
+                $categories.empty();
+
+                const groupedInventory = groupByCategory(inventory);
+
+                Object.keys(groupedInventory).forEach(category => {
+                    const $category = $(`
+                        <div class="category-section">
+                            <h3 class="text-lg font-semibold mb-3">${category}</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                        </div>
+                    `);
+
+                    groupedInventory[category].forEach(item => {
+                        const $item = $(`
+                            <div class="border p-4 rounded">
+                                <h4 class="font-medium">${item.Product}</h4>
+                                <p class="text-gray-600">₹${item.Cost}/${item.Unit}</p>
+                                <div class="mt-2">
+                                    <input type="number" 
+                                           class="order-quantity w-20 p-1 border rounded" 
+                                           min="${item['Min Unit']}"
+                                           max="${item['Available Units']}"
+                                           step="${item['Min Unit']}"
+                                           data-product="${item.Product}">
+                                    <span class="ml-2">${item.Unit}</span>
+                                </div>
+                            </div>
+                        `);
+                        $category.find('.grid').append($item);
+                    });
+
+                    $categories.append($category);
+                });
+            }
+
+            // Group inventory items by category
+            function groupByCategory(inventory) {
+                return inventory.reduce((acc, item) => {
+                    if (!acc[item.Category]) {
+                        acc[item.Category] = [];
+                    }
+                    acc[item.Category].push(item);
+                    return acc;
+                }, {});
+            }
+
+            // Handle order submission
+            $('#submitOrder').click(function() {
+                const orderFormUrl = $('#orderFormUrl').val();
+                const orders = [];
+
+                $('.order-quantity').each(function() {
+                    const quantity = $(this).val();
+                    if (quantity && quantity > 0) {
+                        orders.push({
+                            product: $(this).data('product'),
+                            quantity: quantity
+                        });
+                    }
+                });
+
+                if (orders.length === 0) {
+                    alert('Please select at least one item to order');
+                    return;
+                }
+
+                // Here you would typically format the order data according to your Google Form structure
+                // and redirect to the form URL with the pre-filled data
+                console.log('Orders:', orders);
+                // window.location.href = orderFormUrl + '?' + $.param(formattedData);
+            });
+        });
+    </script>
+</body>
+</html>
