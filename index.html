@@ -161,10 +161,10 @@
 
                     groupedInventory[category].forEach(item => {
                         const $item = $(`
-                            <div class="border p-4 rounded">
+                            <div class="border p-4 rounded item-container">
                                 <h4 class="font-medium">${item.Product}</h4>
                                 <p class="text-gray-600">₹${item.Cost}/${item.Unit}</p>
-                                <div class="mt-2 flex items-center space-x-2">
+                                <div class="mt-2 flex items-center space-x-2 controls-container">
                                     <input type="number" 
                                            class="order-quantity w-20 p-1 border rounded" 
                                            min="${item['Min Unit']}"
@@ -179,7 +179,7 @@
                                     <button class="add-btn bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600">
                                         Add
                                     </button>
-                                    <button class="remove-btn bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" style="display: none;">
+                                    <button class="remove-btn bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 hidden">
                                         Remove
                                     </button>
                                 </div>
@@ -191,15 +191,32 @@
                         `);
 
                         // Add click handlers
-                        $item.find('.add-btn').click(function() {
-                            const $input = $(this).closest('div').find('.order-quantity');
+                        $item.find('.add-btn').click(function(e) {
+                            e.preventDefault();
+                            console.log('Add button clicked');
+                            const $container = $(this).closest('.controls-container');
+                            const $input = $container.find('.order-quantity');
                             const minUnit = parseFloat($input.data('min-unit'));
                             const currentVal = parseFloat($input.val()) || 0;
                             const newVal = currentVal + minUnit;
                             
+                            console.log('Add button debug:', {
+                                minUnit: minUnit,
+                                currentVal: currentVal,
+                                newVal: newVal,
+                                inputFound: $input.length > 0
+                            });
+                            
                             if (newVal <= parseFloat($input.attr('max'))) {
                                 $input.val(newVal);
                                 updateItemDisplay($input);
+                                
+                                // Force check if remove button is visible after update
+                                const $removeBtn = $container.find('.remove-btn');
+                                console.log('Remove button state after update:', {
+                                    isHidden: $removeBtn.hasClass('hidden'),
+                                    classes: $removeBtn.attr('class')
+                                });
                             }
                         });
 
@@ -241,13 +258,22 @@
             // Add this function outside the forEach loop but inside displayInventory
             function updateItemDisplay($input) {
                 const quantity = parseFloat($input.val()) || 0;
-                const $container = $input.closest('.border');
-                const $removeBtn = $container.find('.remove-btn');
-                const $orderCount = $container.find('.order-count');
-                const $totalPrice = $container.find('.total-price');
+                const $itemContainer = $input.closest('.item-container');
+                const $removeBtn = $itemContainer.find('.remove-btn');
+                const $orderCount = $itemContainer.find('.order-count');
+                const $totalPrice = $itemContainer.find('.total-price');
+                
+                console.log('Debug info:', {
+                    quantity: quantity,
+                    itemContainerFound: $itemContainer.length > 0,
+                    removeBtnFound: $removeBtn.length > 0,
+                    removeBtnClasses: $removeBtn.attr('class'),
+                    inputValue: $input.val()
+                });
                 
                 if (quantity > 0) {
-                    $removeBtn.show();
+                    console.log('Showing remove button - quantity > 0');
+                    $removeBtn.removeClass('hidden');
                     $orderCount.show();
                     $totalPrice.show();
                     $orderCount.find('.count').text(quantity);
@@ -261,7 +287,8 @@
                         `Rs. ${totalPrice} (Rs. ${cost} / ${minUnit}${unit} * ${quantity})`
                     );
                 } else {
-                    $removeBtn.hide();
+                    console.log('Hiding remove button - quantity = 0');
+                    $removeBtn.addClass('hidden');
                     $orderCount.hide();
                     $totalPrice.hide();
                 }
