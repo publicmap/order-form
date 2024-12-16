@@ -77,13 +77,33 @@
         $(document).ready(function() {
             let inventory = [];
 
+            // Extract loading logic into a separate function
+            function loadInventoryFromUrl(csvUrl) {
+                $('#loading').removeClass('hidden');
+                
+                $.get(csvUrl, function(data) {
+                    try {
+                        inventory = parseCSV(data);
+                        displayInventory(inventory);
+                        $('#loading').addClass('hidden');
+                    } catch (e) {
+                        $('#loading').addClass('hidden');
+                        alert('Error parsing CSV data: ' + e.message);
+                    }
+                }).fail(function(error) {
+                    $('#loading').addClass('hidden');
+                    alert('Error loading inventory: ' + error.statusText);
+                });
+            }
+
             // Check URL parameters first
             const urlParams = new URLSearchParams(window.location.search);
             const sheetId = urlParams.get('sheetId');
             
             if (sheetId) {
-                $('#csvUrl').val(`https://docs.google.com/spreadsheets/d/e/${sheetId}/pub?output=csv`);
-                $('#loadInventory').click();
+                const csvUrl = `https://docs.google.com/spreadsheets/d/e/${sheetId}/pub?output=csv`;
+                $('#csvUrl').val(csvUrl);
+                loadInventoryFromUrl(csvUrl); // Directly load the inventory
             } else {
                 // Fall back to localStorage
                 const lastUsedUrl = localStorage.getItem('lastUsedCsvUrl');
@@ -102,21 +122,7 @@
                     localStorage.setItem('lastUsedCsvUrl', csvUrl);
                 }
 
-                $('#loading').removeClass('hidden');
-                
-                $.get(csvUrl, function(data) {
-                    try {
-                        inventory = parseCSV(data);
-                        displayInventory(inventory);
-                        $('#loading').addClass('hidden');
-                    } catch (e) {
-                        $('#loading').addClass('hidden');
-                        alert('Error parsing CSV data: ' + e.message);
-                    }
-                }).fail(function(error) {
-                    $('#loading').addClass('hidden');
-                    alert('Error loading inventory: ' + error.statusText);
-                });
+                loadInventoryFromUrl(csvUrl);
             });
 
             // Update the parseCSV function to handle comma-separated values
@@ -158,17 +164,62 @@
                             <div class="border p-4 rounded">
                                 <h4 class="font-medium">${item.Product}</h4>
                                 <p class="text-gray-600">₹${item.Cost}/${item.Unit}</p>
-                                <div class="mt-2">
+                                <div class="mt-2 flex items-center space-x-2">
                                     <input type="number" 
                                            class="order-quantity w-20 p-1 border rounded" 
                                            min="${item['Min Unit']}"
                                            max="${item['Available Units']}"
                                            step="${item['Min Unit']}"
-                                           data-product="${item.Product}">
-                                    <span class="ml-2">${item.Unit}</span>
+                                           value="0"
+                                           data-product="${item.Product}"
+                                           data-cost="${item.Cost}"
+                                           data-min-unit="${item['Min Unit']}"
+                                           data-unit="${item.Unit}">
+                                    <span>${item.Unit}</span>
+                                    <button class="add-btn bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600">
+                                        Add
+                                    </button>
+                                    <button class="remove-btn bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" style="display: none;">
+                                        Remove
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="order-count" style="display: none;">Orders: <span class="count">0</span></span>
+                                    <div class="total-price" style="display: none;" class="text-sm text-gray-600"></div>
                                 </div>
                             </div>
                         `);
+
+                        // Add click handlers
+                        $item.find('.add-btn').click(function() {
+                            const $input = $(this).closest('div').find('.order-quantity');
+                            const minUnit = parseFloat($input.data('min-unit'));
+                            const currentVal = parseFloat($input.val()) || 0;
+                            const newVal = currentVal + minUnit;
+                            
+                            if (newVal <= parseFloat($input.attr('max'))) {
+                                $input.val(newVal);
+                                updateItemDisplay($input);
+                            }
+                        });
+
+                        $item.find('.remove-btn').click(function() {
+                            const $input = $(this).closest('div').find('.order-quantity');
+                            const minUnit = parseFloat($input.data('min-unit'));
+                            const currentVal = parseFloat($input.val()) || 0;
+                            const newVal = currentVal - minUnit;
+                            
+                            if (newVal >= 0) {
+                                $input.val(newVal);
+                                updateItemDisplay($input);
+                            }
+                        });
+
+                        // Add input change handler
+                        $item.find('.order-quantity').on('input', function() {
+                            updateItemDisplay($(this));
+                        });
+
                         $category.find('.grid').append($item);
                     });
 
@@ -185,6 +236,35 @@
                     acc[item.Category].push(item);
                     return acc;
                 }, {});
+            }
+
+            // Add this function outside the forEach loop but inside displayInventory
+            function updateItemDisplay($input) {
+                const quantity = parseFloat($input.val()) || 0;
+                const $container = $input.closest('.border');
+                const $removeBtn = $container.find('.remove-btn');
+                const $orderCount = $container.find('.order-count');
+                const $totalPrice = $container.find('.total-price');
+                
+                if (quantity > 0) {
+                    $removeBtn.show();
+                    $orderCount.show();
+                    $totalPrice.show();
+                    $orderCount.find('.count').text(quantity);
+                    
+                    const cost = parseFloat($input.data('cost'));
+                    const minUnit = parseFloat($input.data('min-unit'));
+                    const unit = $input.data('unit');
+                    const totalPrice = cost * (quantity / minUnit);
+                    
+                    $totalPrice.text(
+                        `Rs. ${totalPrice} (Rs. ${cost} / ${minUnit}${unit} * ${quantity})`
+                    );
+                } else {
+                    $removeBtn.hide();
+                    $orderCount.hide();
+                    $totalPrice.hide();
+                }
             }
 
             // Handle order submission
