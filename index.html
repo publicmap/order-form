@@ -12,11 +12,11 @@
         <!-- Header -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-800">Order Form</h1>
-            <p class="text-gray-600">Select items from our inventory</p>
+            <p class="text-gray-600">Select items from <a id="inventoryLink" href="#" target="_blank" class="text-blue-600 hover:text-blue-800 underline">our inventory</a></p>
         </div>
 
         <!-- Configuration Section -->
-        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+        <div id="configSection" class="bg-white p-6 rounded-lg shadow-md mb-8">
             <h2 class="text-xl font-semibold mb-4">Configuration</h2>
             <div class="space-y-4">
                 <div>
@@ -36,64 +36,95 @@
             </div>
         </div>
 
-        <!-- Customer Information Section -->
-        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-xl font-semibold mb-4">Customer Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-gray-700 mb-2">Name *</label>
-                    <input type="text" id="customerName" class="w-full p-2 border rounded" required>
-                </div>
-                <div>
-                    <label class="block text-gray-700 mb-2">Address</label>
-                    <input type="text" id="customerEmail" class="w-full p-2 border rounded">
-                </div>
-                <div>
-                    <label class="block text-gray-700 mb-2">Phone</label>
-                    <input type="tel" id="customerPhone" class="w-full p-2 border rounded">
-                </div>
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-md">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button id="selectItemsTab" class="border-b-2 border-blue-500 py-4 px-1 text-blue-600 font-medium text-sm whitespace-nowrap">
+                        Select Items
+                    </button>
+                    <button id="checkoutTab" class="border-b-2 border-transparent py-4 px-1 text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm whitespace-nowrap">
+                        Checkout
+                    </button>
+                </nav>
             </div>
-        </div>
 
-        <!-- Order Form -->
-        <div id="orderForm" class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold mb-4">Order Items</h2>
-            <div id="loading" class="hidden">
-                <div class="flex items-center justify-center p-4">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    <span class="ml-2">Loading inventory...</span>
+            <!-- Tab Content -->
+            <!-- Select Items Tab -->
+            <div id="selectItemsContent" class="p-6">
+                <div id="loading" class="hidden">
+                    <div class="flex items-center justify-center p-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                        <span class="ml-2">Loading inventory...</span>
+                    </div>
+                </div>
+                <div id="categories" class="space-y-6 mb-8"></div>
+                
+                <div class="border-t pt-6 text-center">
+                    <button id="proceedToCheckout" 
+                            class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        Proceed to Checkout
+                    </button>
                 </div>
             </div>
-            <div id="categories" class="space-y-6"></div>
-            
-            <button id="submitOrder" 
-                    class="mt-6 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                Submit Order to Google Form
-            </button>
-        </div>
 
-        <!-- Order Summary Table -->
-        <div id="orderSummary" class="bg-white p-6 rounded-lg shadow-md mt-8" style="display: none;">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Order Summary</h2>
-                <button id="copyToClipboard" 
-                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                    Copy to Clipboard
-                </button>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full border-collapse border border-gray-300">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border border-gray-300 px-4 py-2 text-left">Category</th>
-                            <th class="border border-gray-300 px-4 py-2 text-left">Product</th>
-                            <th class="border border-gray-300 px-4 py-2 text-left">Unit</th>
-                            <th class="border border-gray-300 px-4 py-2 text-left">Cost</th>
-                        </tr>
-                    </thead>
-                    <tbody id="orderTableBody">
-                    </tbody>
-                </table>
+            <!-- Checkout Tab -->
+            <div id="checkoutContent" class="p-6 hidden">
+                <!-- Customer Information -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-semibold mb-4">Customer Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2">Name *</label>
+                            <input type="text" id="customerName" class="w-full p-2 border rounded" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">Address</label>
+                            <input type="text" id="customerEmail" class="w-full p-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">Phone</label>
+                            <input type="tel" id="customerPhone" class="w-full p-2 border rounded">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse border border-gray-300">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="border border-gray-300 px-4 py-2 text-left">Category</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left">Product</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left">Quantity</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left">Unit Price</th>
+                                    <th class="border border-gray-300 px-4 py-2 text-left">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="checkoutTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Order Total -->
+                <div class="text-right mb-8">
+                    <div class="text-2xl font-bold">
+                        Total: ₹<span id="orderTotal">0</span>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center">
+                    <button id="submitOrder" 
+                            class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 text-lg font-medium">
+                        Submit Order
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -126,6 +157,101 @@
         // Modify the document ready function
         $(document).ready(function() {
             let inventory = [];
+            let currentOrders = [];
+
+            // Tab switching functionality
+            function switchToTab(tabName) {
+                if (tabName === 'selectItems') {
+                    $('#selectItemsTab').addClass('border-blue-500 text-blue-600').removeClass('border-transparent text-gray-500');
+                    $('#checkoutTab').addClass('border-transparent text-gray-500').removeClass('border-blue-500 text-blue-600');
+                    $('#selectItemsContent').show();
+                    $('#checkoutContent').hide();
+                } else if (tabName === 'checkout') {
+                    $('#selectItemsTab').addClass('border-transparent text-gray-500').removeClass('border-blue-500 text-blue-600');
+                    $('#checkoutTab').addClass('border-blue-500 text-blue-600').removeClass('border-transparent text-gray-500');
+                    $('#selectItemsContent').hide();
+                    $('#checkoutContent').show();
+                    updateCheckoutTable();
+                }
+            }
+
+            // Tab click handlers
+            $('#selectItemsTab').click(function() {
+                switchToTab('selectItems');
+            });
+
+            $('#checkoutTab').click(function() {
+                switchToTab('checkout');
+            });
+
+            // Proceed to checkout functionality
+            $('#proceedToCheckout').click(function() {
+                switchToTab('checkout');
+            });
+
+            // Function to update checkout table
+            function updateCheckoutTable() {
+                const orders = [];
+                let totalAmount = 0;
+
+                $('.order-quantity').each(function() {
+                    const quantity = $(this).val();
+                    if (quantity && quantity > 0) {
+                        const $input = $(this);
+                        const product = $input.data('product');
+                        const cost = parseFloat($input.data('cost'));
+                        const unit = $input.data('unit');
+                        
+                        // Find the category for this product
+                        const category = $input.closest('.category-section').find('h3').text();
+                        
+                        const itemTotal = cost * parseFloat(quantity);
+                        totalAmount += itemTotal;
+                        
+                        orders.push({
+                            category: category,
+                            product: product,
+                            unit: unit,
+                            cost: cost,
+                            quantity: quantity,
+                            total: itemTotal
+                        });
+                    }
+                });
+
+                currentOrders = orders;
+
+                // Update checkout table
+                const $tableBody = $('#checkoutTableBody');
+                $tableBody.empty();
+                
+                orders.forEach(order => {
+                    const row = `
+                        <tr>
+                            <td class="border border-gray-300 px-4 py-2">${order.category}</td>
+                            <td class="border border-gray-300 px-4 py-2">${order.product}</td>
+                            <td class="border border-gray-300 px-4 py-2">${order.quantity} ${order.unit}</td>
+                            <td class="border border-gray-300 px-4 py-2">₹${order.cost}</td>
+                            <td class="border border-gray-300 px-4 py-2">₹${order.total}</td>
+                        </tr>
+                    `;
+                    $tableBody.append(row);
+                });
+
+                $('#orderTotal').text(totalAmount);
+            }
+
+            // Function to update proceed button state
+            function updateProceedButton() {
+                let hasItems = false;
+                $('.order-quantity').each(function() {
+                    if ($(this).val() > 0) {
+                        hasItems = true;
+                        return false; // break
+                    }
+                });
+                $('#proceedToCheckout').prop('disabled', !hasItems);
+            }
 
             // Extract loading logic into a separate function
             function loadInventoryFromUrl(inputUrl) {
@@ -195,6 +321,11 @@
                 if (lastUsedUrl) {
                     $('#csvUrl').val(lastUsedUrl);
                     csvUrlToLoad = lastUsedUrl;
+                    // Update inventory link with saved URL
+                    const savedSheetId = getSheetIdFromUrl(lastUsedUrl);
+                    if (savedSheetId) {
+                        updateInventoryLink(savedSheetId, lastUsedUrl);
+                    }
                 }
             }
             
@@ -210,6 +341,32 @@
 
             // Load saved customer info
             loadCustomerInfo();
+            
+            // Update inventory link if we have a sheet ID
+            function updateInventoryLink(sheetId, originalUrl) {
+                const $inventoryLink = $('#inventoryLink');
+                if (sheetId) {
+                    // If we have the original Google Sheets URL, use it; otherwise construct one
+                    if (originalUrl && originalUrl.includes('docs.google.com')) {
+                        $inventoryLink.attr('href', originalUrl);
+                    } else {
+                        $inventoryLink.attr('href', `https://docs.google.com/spreadsheets/d/${sheetId}/edit`);
+                    }
+                } else {
+                    $inventoryLink.removeAttr('href').css('cursor', 'default').removeClass('text-blue-600 hover:text-blue-800').addClass('text-gray-600');
+                }
+            }
+            
+            // Check if we have valid configuration from URL params
+            const hasValidConfig = sheetId && (formUrl || localStorage.getItem('lastUsedFormUrl'));
+            
+            // Update inventory link
+            updateInventoryLink(sheetId, null);
+            
+            // Hide configuration section if we have valid URL params
+            if (hasValidConfig) {
+                $('#configSection').hide();
+            }
             
             // Auto-load inventory if both URLs are available
             if (csvUrlToLoad && (formUrl || localStorage.getItem('lastUsedFormUrl'))) {
@@ -238,6 +395,9 @@
                     localStorage.setItem('lastUsedFormUrl', googleFormUrl);
                 }
                 window.history.pushState({}, '', newUrl);
+
+                // Update inventory link
+                updateInventoryLink(sheetId, csvUrl);
 
                 loadInventoryFromUrl(csvUrl);
             });
@@ -311,30 +471,15 @@
                         // Add click handlers
                         $item.find('.add-btn').click(function(e) {
                             e.preventDefault();
-                            console.log('Add button clicked');
                             const $container = $(this).closest('.controls-container');
                             const $input = $container.find('.order-quantity');
                             const minUnit = parseFloat($input.data('min-unit'));
                             const currentVal = parseFloat($input.val()) || 0;
                             const newVal = currentVal + minUnit;
                             
-                            console.log('Add button debug:', {
-                                minUnit: minUnit,
-                                currentVal: currentVal,
-                                newVal: newVal,
-                                inputFound: $input.length > 0
-                            });
-                            
                             if (newVal <= parseFloat($input.attr('max'))) {
                                 $input.val(newVal);
                                 updateItemDisplay($input);
-                                
-                                // Force check if remove button is visible after update
-                                const $removeBtn = $container.find('.remove-btn');
-                                console.log('Remove button state after update:', {
-                                    isHidden: $removeBtn.hasClass('hidden'),
-                                    classes: $removeBtn.attr('class')
-                                });
                             }
                         });
 
@@ -381,16 +526,7 @@
                 const $orderCount = $itemContainer.find('.order-count');
                 const $totalPrice = $itemContainer.find('.total-price');
                 
-                console.log('Debug info:', {
-                    quantity: quantity,
-                    itemContainerFound: $itemContainer.length > 0,
-                    removeBtnFound: $removeBtn.length > 0,
-                    removeBtnClasses: $removeBtn.attr('class'),
-                    inputValue: $input.val()
-                });
-                
                 if (quantity > 0) {
-                    console.log('Showing remove button - quantity > 0');
                     $removeBtn.removeClass('hidden');
                     $orderCount.show();
                     $totalPrice.show();
@@ -405,11 +541,13 @@
                     
                     $totalPrice.text(`Rs. ${totalPrice}`);
                 } else {
-                    console.log('Hiding remove button - quantity = 0');
                     $removeBtn.addClass('hidden');
                     $orderCount.hide();
                     $totalPrice.hide();
                 }
+                
+                // Update proceed button state
+                updateProceedButton();
             }
 
             // Handle order submission
@@ -421,51 +559,35 @@
 
                 // Validate required fields
                 if (!customerName.trim()) {
-                    alert('Please enter customer name');
+                    $('#customerName').focus();
+                    $('#customerName').addClass('border-red-500');
                     return;
+                } else {
+                    $('#customerName').removeClass('border-red-500');
                 }
 
                 if (!googleFormUrl.trim()) {
-                    alert('Please enter Google Form URL in configuration');
-                    return;
-                }
-
-                const orders = [];
-                let totalAmount = 0;
-
-                $('.order-quantity').each(function() {
-                    const quantity = $(this).val();
-                    if (quantity && quantity > 0) {
-                        const $input = $(this);
-                        const product = $input.data('product');
-                        const cost = parseFloat($input.data('cost'));
-                        const unit = $input.data('unit');
-                        
-                        // Find the category for this product
-                        const category = $input.closest('.category-section').find('h3').text();
-                        
-                        const itemTotal = cost * parseFloat(quantity);
-                        totalAmount += itemTotal;
-                        
-                        orders.push({
-                            category: category,
-                            product: product,
-                            unit: unit,
-                            cost: cost,
-                            quantity: quantity,
-                            total: itemTotal
-                        });
+                    switchToTab('selectItems');
+                    if (!$('#configSection').is(':hidden')) {
+                        $('#googleFormUrl').focus();
+                        $('#googleFormUrl').addClass('border-red-500');
                     }
-                });
+                    return;
+                } else {
+                    $('#googleFormUrl').removeClass('border-red-500');
+                }
 
-                if (orders.length === 0) {
-                    alert('Please select at least one item to order');
+                if (currentOrders.length === 0) {
+                    switchToTab('selectItems');
                     return;
                 }
+
+                // Calculate total amount
+                const totalAmount = currentOrders.reduce((sum, order) => sum + order.total, 0);
 
                 // Format order details for Google Form
                 let orderDetails = 'ORDER DETAILS:\n\n';
-                orders.forEach(order => {
+                currentOrders.forEach(order => {
                     orderDetails += `${order.category} - ${order.product}\n`;
                     orderDetails += `Quantity: ${order.quantity} ${order.unit}\n`;
                     orderDetails += `Unit Price: ₹${order.cost}\n`;
@@ -473,10 +595,7 @@
                 });
                 orderDetails += `GRAND TOTAL: ₹${totalAmount}`;
 
-                // Display order summary table
-                displayOrderSummary(orders);
-
-                // Submit to Google Form
+                // Submit to Google Form directly
                 submitToGoogleForm(googleFormUrl, {
                     customerName: customerName,
                     customerEmail: customerEmail,
@@ -486,61 +605,12 @@
                 });
             });
 
-            // Function to display order summary table
-            function displayOrderSummary(orders) {
-                const $orderSummary = $('#orderSummary');
-                const $tableBody = $('#orderTableBody');
-                
-                // Clear existing rows
-                $tableBody.empty();
-                
-                // Add rows for each order
-                orders.forEach(order => {
-                    const row = `
-                        <tr>
-                            <td class="border border-gray-300 px-4 py-2">${order.category}</td>
-                            <td class="border border-gray-300 px-4 py-2">${order.product}</td>
-                            <td class="border border-gray-300 px-4 py-2">${order.quantity} ${order.unit}</td>
-                            <td class="border border-gray-300 px-4 py-2">₹${order.cost}</td>
-                        </tr>
-                    `;
-                    $tableBody.append(row);
-                });
-                
-                // Show the order summary section
-                $orderSummary.show();
-                
-                // Scroll to the order summary
-                $orderSummary[0].scrollIntoView({ behavior: 'smooth' });
-            }
-
-            // Handle copy to clipboard
-            $('#copyToClipboard').click(function() {
-                let tableText = 'Category\tProduct\tUnit\tCost\n';
-                
-                $('#orderTableBody tr').each(function() {
-                    const cells = [];
-                    $(this).find('td').each(function() {
-                        cells.push($(this).text());
-                    });
-                    tableText += cells.join('\t') + '\n';
-                });
-                
-                navigator.clipboard.writeText(tableText).then(function() {
-                    // Temporarily change button text to show success
-                    const $btn = $('#copyToClipboard');
-                    const originalText = $btn.text();
-                    $btn.text('Copied!');
-                    setTimeout(() => {
-                        $btn.text(originalText);
-                    }, 2000);
-                }).catch(function(err) {
-                    alert('Failed to copy to clipboard: ' + err);
-                });
-            });
 
             // Function to submit data to Google Form
             function submitToGoogleForm(formUrl, data) {
+                // Disable submit button temporarily
+                $('#submitOrder').prop('disabled', true).text('Submitting...');
+                
                 // Convert regular form URL to submission URL
                 let submitUrl = formUrl;
                 if (submitUrl.includes('/viewform')) {
@@ -553,16 +623,18 @@
                                    `Phone: ${data.customerPhone}\n\n` +
                                    `${data.orderDetails}`;
                     
-                    if (confirm('Google Form will open in a new window. Click OK to continue.')) {
-                        window.open(formUrl, '_blank');
-                        
-                        // Also copy the order details to clipboard for easy pasting
-                        navigator.clipboard.writeText(message).then(() => {
-                            alert('Order details copied to clipboard! Paste them into the form.');
-                        }).catch(() => {
-                            alert('Please copy this information and paste it into the form:\n\n' + message);
-                        });
-                    }
+                    window.open(formUrl, '_blank');
+                    
+                    // Copy the order details to clipboard for easy pasting
+                    navigator.clipboard.writeText(message).then(() => {
+                        // Show success message
+                        $('#submitOrder').text('Order Submitted!').addClass('bg-green-600');
+                        setTimeout(() => {
+                            $('#submitOrder').prop('disabled', false).text('Submit Order').removeClass('bg-green-600');
+                        }, 3000);
+                    }).catch(() => {
+                        $('#submitOrder').prop('disabled', false).text('Submit Order');
+                    });
                     return;
                 }
 
@@ -601,20 +673,18 @@
                     value: data.totalAmount
                 }));
 
-                // Debug: Log the data being sent
-                console.log('Submitting data:', data);
-                console.log('Order details length:', data.orderDetails.length);
-                
                 // Append form to body and submit
                 $('body').append($form);
-                
-                alert('Submitting order to Google Form...');
                 $form.submit();
+                
+                // Show success message
+                $('#submitOrder').text('Order Submitted!').addClass('bg-green-600');
                 
                 // Remove the form after submission
                 setTimeout(() => {
                     $form.remove();
-                }, 1000);
+                    $('#submitOrder').prop('disabled', false).text('Submit Order').removeClass('bg-green-600');
+                }, 3000);
             }
         });
     </script>
