@@ -20,9 +20,9 @@
             <h2 class="text-xl font-semibold mb-4">Configuration</h2>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-gray-700 mb-2">Inventory Sheet CSV URL</label>
+                    <label class="block text-gray-700 mb-2">Inventory Sheet URL</label>
                     <input type="text" id="csvUrl" class="w-full p-2 border rounded" 
-                           placeholder="Enter CSV URL or ?sheetId=YOUR_SHEET_ID">
+                           placeholder="Enter CSV URL, Google Sheets URL, or ?sheetId=YOUR_SHEET_ID">
                 </div>
                 <div>
                     <label class="block text-gray-700 mb-2">Google Form URL</label>
@@ -106,8 +106,14 @@
                 return url.replace('?sheetId=', '');
             }
             
-            // Handle full Google Sheets URL
-            const matches = url.match(/spreadsheets\/d\/e\/([-\w]+)/);
+            // Handle Google Sheets edit URL (https://docs.google.com/spreadsheets/d/SHEET_ID/edit...)
+            let matches = url.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+            if (matches) {
+                return matches[1];
+            }
+            
+            // Handle published Google Sheets CSV URL (spreadsheets/d/e/SHEET_ID)
+            matches = url.match(/spreadsheets\/d\/e\/([-\w]+)/);
             return matches ? matches[1] : null;
         }
 
@@ -122,8 +128,17 @@
             let inventory = [];
 
             // Extract loading logic into a separate function
-            function loadInventoryFromUrl(csvUrl) {
+            function loadInventoryFromUrl(inputUrl) {
                 $('#loading').removeClass('hidden');
+                
+                // Convert Google Sheets URL to CSV export URL if needed
+                let csvUrl = inputUrl;
+                const sheetId = getSheetIdFromUrl(inputUrl);
+                
+                // If we got a sheet ID from a Google Sheets URL, convert to CSV export URL
+                if (sheetId && inputUrl.includes('docs.google.com')) {
+                    csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+                }
                 
                 $.get(csvUrl, function(data) {
                     try {
@@ -172,7 +187,7 @@
             let csvUrlToLoad = null;
             
             if (sheetId) {
-                csvUrlToLoad = `https://docs.google.com/spreadsheets/d/e/${sheetId}/pub?output=csv`;
+                csvUrlToLoad = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
                 $('#csvUrl').val(csvUrlToLoad);
             } else {
                 // Fall back to localStorage
