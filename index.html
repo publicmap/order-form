@@ -6,6 +6,8 @@
     <title>Order Form</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/LeaVerou/awesomplete@master/awesomplete.css">
+    <script src="https://cdn.jsdelivr.net/gh/LeaVerou/awesomplete@master/awesomplete.min.js"></script>
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
@@ -59,6 +61,23 @@
                         <span class="ml-2">Loading inventory...</span>
                     </div>
                 </div>
+                
+                <!-- Search Filter -->
+                <div class="mb-6" id="searchContainer" style="display: none;">
+                    <div class="relative max-w-md">
+                        <input type="text" 
+                               id="productSearch" 
+                               class="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               placeholder="Search products...">
+                        <button id="clearSearch" 
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 hidden">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
                 <div id="categories" class="space-y-6 mb-8"></div>
                 
                 <div class="border-t pt-6 text-center">
@@ -158,6 +177,8 @@
         $(document).ready(function() {
             let inventory = [];
             let currentOrders = [];
+            let awesomplete = null;
+            let allProducts = [];
 
             // Tab switching functionality
             function switchToTab(tabName) {
@@ -421,6 +442,87 @@
                 return result;
             }
 
+            // Initialize autocomplete search
+            function initializeSearch() {
+                allProducts = inventory.map(item => ({
+                    label: `${item.Product} - ${item.Category}`,
+                    value: item.Product,
+                    item: item
+                }));
+
+                const searchInput = document.getElementById('productSearch');
+                awesomplete = new Awesomplete(searchInput, {
+                    list: allProducts.map(p => p.label),
+                    minChars: 1,
+                    maxItems: 8,
+                    autoFirst: true
+                });
+
+                // Show search container
+                $('#searchContainer').show();
+
+                // Handle search input
+                $('#productSearch').on('input', function() {
+                    const searchTerm = $(this).val().toLowerCase().trim();
+                    $('#clearSearch').toggle(searchTerm.length > 0);
+                    filterProducts(searchTerm);
+                });
+
+                // Handle autocomplete selection
+                searchInput.addEventListener('awesomplete-selectcomplete', function(e) {
+                    const selectedProduct = allProducts.find(p => p.label === e.text);
+                    if (selectedProduct) {
+                        scrollToProduct(selectedProduct.item.Product);
+                    }
+                });
+            }
+
+            // Filter products based on search term
+            function filterProducts(searchTerm) {
+                if (!searchTerm) {
+                    $('.category-section, .item-container').show();
+                    return;
+                }
+
+                $('.item-container').each(function() {
+                    const $item = $(this);
+                    const productName = $item.find('h4').text().toLowerCase();
+                    const categoryName = $item.closest('.category-section').find('h3').text().toLowerCase();
+                    
+                    if (productName.includes(searchTerm) || categoryName.includes(searchTerm)) {
+                        $item.show();
+                    } else {
+                        $item.hide();
+                    }
+                });
+
+                // Hide empty categories
+                $('.category-section').each(function() {
+                    const $category = $(this);
+                    const visibleItems = $category.find('.item-container:visible').length;
+                    $category.toggle(visibleItems > 0);
+                });
+            }
+
+            // Scroll to specific product
+            function scrollToProduct(productName) {
+                $('.item-container').each(function() {
+                    const $item = $(this);
+                    const itemProductName = $item.find('h4').text();
+                    if (itemProductName === productName) {
+                        $item[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        $item.addClass('ring-2 ring-blue-500');
+                        setTimeout(() => $item.removeClass('ring-2 ring-blue-500'), 2000);
+                        return false; // break
+                    }
+                });
+            }
+
+            // Clear search functionality
+            $('#clearSearch').click(function() {
+                $('#productSearch').val('').trigger('input').focus();
+            });
+
             // Display inventory grouped by category
             function displayInventory(inventory) {
                 const $categories = $('#categories');
@@ -505,6 +607,9 @@
 
                     $categories.append($category);
                 });
+                
+                // Initialize search after displaying inventory
+                initializeSearch();
             }
 
             // Group inventory items by category
