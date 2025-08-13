@@ -25,14 +25,33 @@
                            placeholder="Enter CSV URL or ?sheetId=YOUR_SHEET_ID">
                 </div>
                 <div>
-                    <label class="block text-gray-700 mb-2">Order Form URL</label>
-                    <input type="text" id="orderFormUrl" class="w-full p-2 border rounded" 
-                           placeholder="Enter Order Form URL">
+                    <label class="block text-gray-700 mb-2">Google Form URL</label>
+                    <input type="text" id="googleFormUrl" class="w-full p-2 border rounded" 
+                           placeholder="Enter Google Form URL (https://forms.gle/...)">
                 </div>
                 <button id="loadInventory" 
                         class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                     Load Inventory
                 </button>
+            </div>
+        </div>
+
+        <!-- Customer Information Section -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold mb-4">Customer Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-gray-700 mb-2">Name *</label>
+                    <input type="text" id="customerName" class="w-full p-2 border rounded" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-2">Address</label>
+                    <input type="text" id="customerEmail" class="w-full p-2 border rounded">
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-2">Phone</label>
+                    <input type="tel" id="customerPhone" class="w-full p-2 border rounded">
+                </div>
             </div>
         </div>
 
@@ -49,7 +68,7 @@
             
             <button id="submitOrder" 
                     class="mt-6 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                Create Order
+                Submit Order to Google Form
             </button>
         </div>
 
@@ -121,31 +140,89 @@
                 });
             }
 
+            // Functions to save and load customer info
+            function saveCustomerInfo() {
+                const customerInfo = {
+                    name: $('#customerName').val(),
+                    email: $('#customerEmail').val(),
+                    phone: $('#customerPhone').val()
+                };
+                localStorage.setItem('customerInfo', JSON.stringify(customerInfo));
+            }
+
+            function loadCustomerInfo() {
+                const savedInfo = localStorage.getItem('customerInfo');
+                if (savedInfo) {
+                    try {
+                        const customerInfo = JSON.parse(savedInfo);
+                        $('#customerName').val(customerInfo.name || '');
+                        $('#customerEmail').val(customerInfo.email || '');
+                        $('#customerPhone').val(customerInfo.phone || '');
+                    } catch (e) {
+                        console.error('Error loading customer info:', e);
+                    }
+                }
+            }
+
             // Check URL parameters first
             const urlParams = new URLSearchParams(window.location.search);
             const sheetId = urlParams.get('sheetId');
+            const formUrl = urlParams.get('formUrl');
+            
+            let csvUrlToLoad = null;
             
             if (sheetId) {
-                const csvUrl = `https://docs.google.com/spreadsheets/d/e/${sheetId}/pub?output=csv`;
-                $('#csvUrl').val(csvUrl);
-                loadInventoryFromUrl(csvUrl); // Directly load the inventory
+                csvUrlToLoad = `https://docs.google.com/spreadsheets/d/e/${sheetId}/pub?output=csv`;
+                $('#csvUrl').val(csvUrlToLoad);
             } else {
                 // Fall back to localStorage
                 const lastUsedUrl = localStorage.getItem('lastUsedCsvUrl');
                 if (lastUsedUrl) {
                     $('#csvUrl').val(lastUsedUrl);
+                    csvUrlToLoad = lastUsedUrl;
                 }
             }
+            
+            if (formUrl) {
+                $('#googleFormUrl').val(decodeURIComponent(formUrl));
+            } else {
+                // Fall back to localStorage
+                const lastUsedFormUrl = localStorage.getItem('lastUsedFormUrl');
+                if (lastUsedFormUrl) {
+                    $('#googleFormUrl').val(lastUsedFormUrl);
+                }
+            }
+
+            // Load saved customer info
+            loadCustomerInfo();
+            
+            // Auto-load inventory if both URLs are available
+            if (csvUrlToLoad && (formUrl || localStorage.getItem('lastUsedFormUrl'))) {
+                loadInventoryFromUrl(csvUrlToLoad);
+            }
+
+            // Add event handlers to save customer info when fields change
+            $('#customerName, #customerEmail, #customerPhone').on('input blur', function() {
+                saveCustomerInfo();
+            });
 
             // Modify the load inventory click handler
             $('#loadInventory').click(function() {
                 const csvUrl = $('#csvUrl').val();
+                const googleFormUrl = $('#googleFormUrl').val();
                 const sheetId = getSheetIdFromUrl(csvUrl);
                 
+                // Update URL with both parameters
+                const newUrl = new URL(window.location.href);
                 if (sheetId) {
-                    updateUrlWithSheetId(sheetId);
+                    newUrl.searchParams.set('sheetId', sheetId);
                     localStorage.setItem('lastUsedCsvUrl', csvUrl);
                 }
+                if (googleFormUrl) {
+                    newUrl.searchParams.set('formUrl', encodeURIComponent(googleFormUrl));
+                    localStorage.setItem('lastUsedFormUrl', googleFormUrl);
+                }
+                window.history.pushState({}, '', newUrl);
 
                 loadInventoryFromUrl(csvUrl);
             });
@@ -322,26 +399,46 @@
 
             // Handle order submission
             $('#submitOrder').click(function() {
-                const orderFormUrl = $('#orderFormUrl').val();
+                const googleFormUrl = $('#googleFormUrl').val();
+                const customerName = $('#customerName').val();
+                const customerEmail = $('#customerEmail').val();
+                const customerPhone = $('#customerPhone').val();
+
+                // Validate required fields
+                if (!customerName.trim()) {
+                    alert('Please enter customer name');
+                    return;
+                }
+
+                if (!googleFormUrl.trim()) {
+                    alert('Please enter Google Form URL in configuration');
+                    return;
+                }
+
                 const orders = [];
+                let totalAmount = 0;
 
                 $('.order-quantity').each(function() {
                     const quantity = $(this).val();
                     if (quantity && quantity > 0) {
                         const $input = $(this);
                         const product = $input.data('product');
-                        const cost = $input.data('cost');
+                        const cost = parseFloat($input.data('cost'));
                         const unit = $input.data('unit');
                         
                         // Find the category for this product
                         const category = $input.closest('.category-section').find('h3').text();
+                        
+                        const itemTotal = cost * parseFloat(quantity);
+                        totalAmount += itemTotal;
                         
                         orders.push({
                             category: category,
                             product: product,
                             unit: unit,
                             cost: cost,
-                            quantity: quantity
+                            quantity: quantity,
+                            total: itemTotal
                         });
                     }
                 });
@@ -351,11 +448,27 @@
                     return;
                 }
 
+                // Format order details for Google Form
+                let orderDetails = 'ORDER DETAILS:\n\n';
+                orders.forEach(order => {
+                    orderDetails += `${order.category} - ${order.product}\n`;
+                    orderDetails += `Quantity: ${order.quantity} ${order.unit}\n`;
+                    orderDetails += `Unit Price: ₹${order.cost}\n`;
+                    orderDetails += `Total: ₹${order.total}\n\n`;
+                });
+                orderDetails += `GRAND TOTAL: ₹${totalAmount}`;
+
                 // Display order summary table
                 displayOrderSummary(orders);
-                
-                console.log('Orders:', orders);
-                // window.location.href = orderFormUrl + '?' + $.param(formattedData);
+
+                // Submit to Google Form
+                submitToGoogleForm(googleFormUrl, {
+                    customerName: customerName,
+                    customerEmail: customerEmail,
+                    customerPhone: customerPhone,
+                    orderDetails: orderDetails,
+                    totalAmount: totalAmount
+                });
             });
 
             // Function to display order summary table
@@ -410,6 +523,84 @@
                     alert('Failed to copy to clipboard: ' + err);
                 });
             });
+
+            // Function to submit data to Google Form
+            function submitToGoogleForm(formUrl, data) {
+                // Convert regular form URL to submission URL
+                let submitUrl = formUrl;
+                if (submitUrl.includes('/viewform')) {
+                    submitUrl = submitUrl.replace('/viewform', '/formResponse');
+                } else if (submitUrl.includes('forms.gle')) {
+                    // For shortened URLs, we'll open the form in a new window with pre-filled data
+                    const message = `Please manually fill this information in the Google Form:\n\n` +
+                                   `Name: ${data.customerName}\n` +
+                                   `Email: ${data.customerEmail}\n` +
+                                   `Phone: ${data.customerPhone}\n\n` +
+                                   `${data.orderDetails}`;
+                    
+                    if (confirm('Google Form will open in a new window. Click OK to continue.')) {
+                        window.open(formUrl, '_blank');
+                        
+                        // Also copy the order details to clipboard for easy pasting
+                        navigator.clipboard.writeText(message).then(() => {
+                            alert('Order details copied to clipboard! Paste them into the form.');
+                        }).catch(() => {
+                            alert('Please copy this information and paste it into the form:\n\n' + message);
+                        });
+                    }
+                    return;
+                }
+
+                // Create a hidden form to submit data
+                const $form = $('<form>', {
+                    method: 'POST',
+                    action: submitUrl,
+                    target: '_blank',
+                    style: 'display: none;'
+                });
+
+                // Add form fields with actual entry IDs from your Google Form
+                $form.append($('<input>', {
+                    name: 'entry.1736322773', // Customer Name field
+                    value: data.customerName
+                }));
+
+                $form.append($('<input>', {
+                    name: 'entry.466504772', // Email field
+                    value: data.customerEmail
+                }));
+
+                $form.append($('<input>', {
+                    name: 'entry.61154094', // Phone field
+                    value: data.customerPhone
+                }));
+
+                $form.append($('<input>', {
+                    name: 'entry.1424632357', // Order Details field
+                    value: data.orderDetails,
+                    type: 'hidden'
+                }));
+
+                $form.append($('<input>', {
+                    name: 'entry.604833501', // Total Amount field
+                    value: data.totalAmount
+                }));
+
+                // Debug: Log the data being sent
+                console.log('Submitting data:', data);
+                console.log('Order details length:', data.orderDetails.length);
+                
+                // Append form to body and submit
+                $('body').append($form);
+                
+                alert('Submitting order to Google Form...');
+                $form.submit();
+                
+                // Remove the form after submission
+                setTimeout(() => {
+                    $form.remove();
+                }, 1000);
+            }
         });
     </script>
 </body>
